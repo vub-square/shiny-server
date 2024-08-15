@@ -6,8 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="W. Cools">
-<meta name="dcterms.date" content="2024-07-19">
+<meta name="author" content="W. Cools &amp; VJ De Deken">
+<meta name="dcterms.date" content="2024-08-15">
 
 <title>Setting up a shiny server on AWS</title>
 <style>
@@ -3108,10 +3108,13 @@ background-size: 180px 36px;
   <li><a href="#create-server" id="toc-create-server" class="nav-link" data-scroll-target="#create-server">Create Server</a></li>
   <li><a href="#connect-to-server" id="toc-connect-to-server" class="nav-link" data-scroll-target="#connect-to-server">Connect to Server</a></li>
   <li><a href="#install-r-and-the-shiny-server" id="toc-install-r-and-the-shiny-server" class="nav-link" data-scroll-target="#install-r-and-the-shiny-server">Install R and the shiny-server</a></li>
-  <li><a href="#update-shiny" id="toc-update-shiny" class="nav-link" data-scroll-target="#update-shiny">update shiny</a></li>
-  <li><a href="#download-shiny-app" id="toc-download-shiny-app" class="nav-link" data-scroll-target="#download-shiny-app">download shiny App</a></li>
-  <li><a href="#uploading-a-shiny-app-to-github" id="toc-uploading-a-shiny-app-to-github" class="nav-link" data-scroll-target="#uploading-a-shiny-app-to-github">uploading a shiny App to github</a></li>
+  <li><a href="#open-port-for-public-use" id="toc-open-port-for-public-use" class="nav-link" data-scroll-target="#open-port-for-public-use">Open PORT for public use</a></li>
+  <li><a href="#upload-your-shiny-app" id="toc-upload-your-shiny-app" class="nav-link" data-scroll-target="#upload-your-shiny-app">Upload your shiny app</a></li>
+  <li><a href="#directory-structure" id="toc-directory-structure" class="nav-link" data-scroll-target="#directory-structure">Directory structure</a></li>
+  <li><a href="#configuration" id="toc-configuration" class="nav-link" data-scroll-target="#configuration">Configuration</a></li>
   </ul></li>
+  <li><a href="#app-deployment" id="toc-app-deployment" class="nav-link" data-scroll-target="#app-deployment">App deployment</a></li>
+  <li><a href="#optional" id="toc-optional" class="nav-link" data-scroll-target="#optional">Optional</a></li>
   </ul>
 <div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="shiny-server.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
 </div>
@@ -3129,14 +3132,14 @@ background-size: 180px 36px;
     <div>
     <div class="quarto-title-meta-heading">Author</div>
     <div class="quarto-title-meta-contents">
-             <p>W. Cools </p>
+             <p>W. Cools &amp; VJ De Deken </p>
           </div>
   </div>
     
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">July 19, 2024</p>
+      <p class="date">August 15, 2024</p>
     </div>
   </div>
   
@@ -3171,14 +3174,15 @@ Acknowledgements
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Document based on https://www.charlesbordet.com/en/guide-shiny-aws/ and Zoë Vandamme’s experiences.</p>
+<p>Document based on https://www.charlesbordet.com/en/guide-shiny-aws/ and Zoë Vandamme’s work.</p>
 </div>
 </div>
 <section id="aws-amazon-server" class="level2">
 <h2 class="anchored" data-anchor-id="aws-amazon-server">AWS Amazon Server</h2>
-<p>The shiny-app can run on AWS for free for a limited time of 720 hours per year,<br>
-create an account at https://aws.amazon.com, and log in.</p>
-<p>Our current SQUARE account is beyond that limit, and requires payment. Note that during development, a server should be started and stopped while working on it as even an idle running server eats away your time.</p>
+<p>Create an account at https://aws.amazon.com, and log in.<br>
+Paying 1 euro links the AWS with your credit card.</p>
+<p>The shiny-app can run on AWS for free for a very limited time of 720 hours per year, when requiring limited storage. Alternatively [add]</p>
+<p>Our current SQUARE account is beyond the above limit, and requires payment.</p>
 <div class="callout callout-style-default callout-important callout-titled" title="Disclaimer">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -3190,102 +3194,21 @@ Disclaimer
 </div>
 <div class="callout-body-container callout-body">
 <p>Free tier: In your first year includes 750 hours of t2.micro (or t3.micro in the Regions in which t2.micro is unavailable) instance usage on free tier AMIs per month, 750 hours of public IPv4 address usage per month, 30 GiB of EBS storage, 2 million IOs, 1 GB of snapshots, and 100 GB of bandwidth to the internet.</p>
+<p>Note that on the limited time schedule, during development, a server should be stopped every time as even an idle running server eats away your allocated time. Therefore, put stop the instance, and start it again next time.</p>
 </div>
 </div>
-<p>A server is created on EC2, take Paris (or somewhere in Europe).</p>
-<section id="create-server" class="level3">
-<h3 class="anchored" data-anchor-id="create-server">Create Server</h3>
-<p>To create a server is the same as to launch an instance.</p>
-<p>To launch an instance, UBUNTU is recommended as amazon machine image (AMI).<br>
-The t2.micro type of instance below 30 Giga is for free, and is suitable for your first try-outs.</p>
-<p>There is standard an SSH inbound security group for port 22, you will use it to log into the system. It should be kept.<br>
-Add an extra security group SSH, with custom TCP, anywhere 0.0.0.0/0 on port 3838, to give access to the user through a browser.</p>
-</section>
-<section id="connect-to-server" class="level3">
-<h3 class="anchored" data-anchor-id="connect-to-server">Connect to Server</h3>
-<p>Log in securely with a private key,<br>
-for that, either select an existing private key, or create a new one.</p>
-<p>If a new key must be created:</p>
-<ul>
-<li>generate a *.pem key, to match at login later</li>
-<li>download the *.pem key to your local machine for future matching</li>
-<li>transform the local <em>.pem to local private </em>.pkk key for use in PuTTy
-<ul>
-<li>for the transformation, use PuTTygen: load <em>.pem, RSA, save </em>.pkk</li>
-</ul></li>
-</ul>
-<p>Use PuTTy to connect to the server:</p>
-<ul>
-<li>set the public IP address (host name at Session) at port 22
-<ul>
-<li>go to the instance and copy from public IPv4 address</li>
-</ul></li>
-<li>in SSH/Auth/Credentials load private key *.pkk</li>
-<li>open</li>
-<li>login: ubuntu</li>
-</ul>
-</section>
-<section id="install-r-and-the-shiny-server" class="level3">
-<h3 class="anchored" data-anchor-id="install-r-and-the-shiny-server">Install R and the shiny-server</h3>
-<p>On the server, install shiny-server and R, and within R install the shiny app.</p>
-<p>You are logged in as ubuntu @ your public IP: this looks a bit like ubuntu@ip-172-31-46-212</p>
-<section id="shiny" class="level4">
-<h4 class="anchored" data-anchor-id="shiny">shiny</h4>
-<p>First set up the shiny-server, so that in R the shiny library can be installed.</p>
-<div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>sudo apt<span class="sc">-</span>key adv <span class="sc">--</span>keyserver keyserver.ubuntu.com <span class="sc">--</span>recv<span class="sc">-</span>keys E298A3A825C0D65DFD57CBB651716619E084DAB9</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sudo add<span class="sc">-</span>apt<span class="sc">-</span>repository <span class="st">&#39;deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/&#39;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout callout-style-default callout-note callout-titled" title="example shiny-app">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
 </div>
-</section>
-<section id="r" class="level4">
-<h4 class="anchored" data-anchor-id="r">R</h4>
-<p>Second, install R</p>
-<div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>sudo apt update</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>sudo apt install r<span class="sc">-</span>base r<span class="sc">-</span>base<span class="sc">-</span>dev</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout-title-container flex-fill">
+example shiny-app
 </div>
-<p>A problem occurred in our first try, installing Rccp and a few other packages, that was solved running.</p>
-<div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>sudo apt<span class="sc">-</span>get upgrade</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>sudo apt<span class="sc">-</span>get install <span class="sc">-</span>y build<span class="sc">-</span>essential libcurl4<span class="sc">-</span>openssl<span class="sc">-</span>dev libssl<span class="sc">-</span>dev libxml2<span class="sc">-</span>dev</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<p>To start R</p>
-<div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>sudo R</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>And in R, install the packages of interest. Use q() to kill R.</p>
-<div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;shiny&quot;</span>, <span class="at">dependencies =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">q</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
-</section>
-<section id="update-shiny" class="level3">
-<h3 class="anchored" data-anchor-id="update-shiny">update shiny</h3>
-<p>Once installed, the shiny server should be updated to the latest version.<br>
-For the latest version consult: [https://posit.co/download/shiny-server/]<br>
-and use that in the wget below (change link below).</p>
-<div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>sudo apt<span class="sc">-</span>get install gdebi<span class="sc">-</span>core</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>wget https<span class="sc">:</span><span class="er">//</span>download3.rstudio.org<span class="sc">/</span>ubuntu<span class="fl">-18.04</span><span class="sc">/</span>x86_64<span class="sc">/</span>shiny<span class="sc">-</span>server<span class="dv">-1</span>.<span class="dv">5</span>.<span class="fl">22.1017</span><span class="sc">-</span>amd64.deb</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>sudo gdebi shiny<span class="sc">-</span>server<span class="dv">-1</span>.<span class="dv">5</span>.<span class="fl">22.1017</span><span class="sc">-</span>amd64.deb</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>If not done already, add a security group on port 3838 to allow user access, go to the instance and add an inbound in Security.<br>
-At this point the index.html example should work, to check, copy the public IP and the port into the browser: public IP:3838</p>
-<p>Now also the shiny-server folder is created.</p>
-<div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>cd <span class="sc">/</span>srv<span class="sc">/</span>shiny<span class="sc">-</span>server<span class="sc">/</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
-<section id="download-shiny-app" class="level3">
-<h3 class="anchored" data-anchor-id="download-shiny-app">download shiny App</h3>
-<p>If an App exists at GitHub, or GitLab, … it can be cloned into the shiny-server folder on the server: /srv/shiny-server/</p>
-<div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>git clone https<span class="sc">:</span>...</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
-<section id="uploading-a-shiny-app-to-github" class="level3">
-<h3 class="anchored" data-anchor-id="uploading-a-shiny-app-to-github">uploading a shiny App to github</h3>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
 <pre class="{shinylive-r}"><code>#| standalone: true
 #| viewerHeight: 800
 library(shiny)
@@ -3318,7 +3241,198 @@ server &lt;- function(input, output) {
   })
 }
 shinyApp(ui = ui, server = server)</code></pre>
+</div>
+</div>
+</div>
+<section id="create-server" class="level3">
+<h3 class="anchored" data-anchor-id="create-server">Create Server</h3>
+<p>To create a server is the same as to launch an instance.<br>
+Create a server on EC2 (button), take Paris (or somewhere in Europe, upper right corner).</p>
+<p>Choose an AMI (amazon machine image); UBUNTU is highly recommended. The default t2.micro type of instance below 30 Giga is for free, and is suitable for your first try-outs.</p>
+<p>To log in securely a private key is required,<br>
+for that, either select an existing private key, or create a new one.</p>
+<p>If and only if a new key must be created:</p>
+<ul>
+<li>generate a *.pem key (use RSA), download it to match it at login later</li>
+<li>transform the local <em>.pem to a local private </em>.pkk key (for use in PuTTy)
+<ul>
+<li>use PuTTygen: load <em>.pem, RSA, save </em>.pkk (private key)</li>
+</ul></li>
+</ul>
+<p>Launch instance !!</p>
 </section>
+<section id="connect-to-server" class="level3">
+<h3 class="anchored" data-anchor-id="connect-to-server">Connect to Server</h3>
+<p>Select instance !!</p>
+<p>Connect to the server with PuTTy:</p>
+<ul>
+<li>set the public IP address (host name at Session) at port 22
+<ul>
+<li>select instance to copy public IPv4 address</li>
+</ul></li>
+<li>in SSH/Auth/Credentials load private key *.pkk</li>
+<li>open and login as ubuntu</li>
+</ul>
+<p>You are logged in on the server !!</p>
+</section>
+<section id="install-r-and-the-shiny-server" class="level3">
+<h3 class="anchored" data-anchor-id="install-r-and-the-shiny-server">Install R and the shiny-server</h3>
+<p>On the server, install the shiny-server and R,<br>
+and within R (on the server) install the shiny package.</p>
+<p>You are logged in as ubuntu @ your public IP: this looks a bit like ubuntu@ip-172-31-46-212</p>
+<section id="shiny" class="level4">
+<h4 class="anchored" data-anchor-id="shiny">shiny</h4>
+<p>Set up the shiny-server, so that in R the shiny package can be installed.</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>sudo apt<span class="sc">-</span>key adv <span class="sc">--</span>keyserver keyserver.ubuntu.com <span class="sc">--</span>recv<span class="sc">-</span>keys E298A3A825C0D65DFD57CBB651716619E084DAB9</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>sudo add<span class="sc">-</span>apt<span class="sc">-</span>repository <span class="st">&#39;deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/&#39;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="r" class="level4">
+<h4 class="anchored" data-anchor-id="r">R</h4>
+<p>Install R on the server.</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>sudo apt update</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>sudo apt install r<span class="sc">-</span>base r<span class="sc">-</span>base<span class="sc">-</span>dev</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>A problem occurred in our first try, installing Rccp and a few other packages, that was solved running the code below, this may not be required for you:</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>sudo apt<span class="sc">-</span>get upgrade</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>sudo apt<span class="sc">-</span>get install <span class="sc">-</span>y build<span class="sc">-</span>essential libcurl4<span class="sc">-</span>openssl<span class="sc">-</span>dev libssl<span class="sc">-</span>dev libxml2<span class="sc">-</span>dev</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Start R to install packages.</p>
+<p>On the server:</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>sudo R</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In R, on the server, install the packages of interest.</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;shiny&quot;</span>, <span class="at">dependencies =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Use q() to kill R.</p>
+<p>Alternatively, install shiny with a linux command.</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>sudo su <span class="sc">-</span> <span class="sc">-</span>c <span class="st">&quot;R -e </span><span class="sc">\&quot;</span><span class="st">install.packages(&#39;shiny&#39;, repos=&#39;https://cran.rstudio.com/&#39;)</span><span class="sc">\&quot;</span><span class="st">&quot;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This can take a fracking while !</p>
+</section>
+<section id="update-shiny" class="level4">
+<h4 class="anchored" data-anchor-id="update-shiny">update shiny</h4>
+<p>Update the the shiny server to the latest version.<br>
+Check which one: [https://posit.co/download/shiny-server/]<br>
+and change the wget link below accordingly.</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>sudo apt<span class="sc">-</span>get install gdebi<span class="sc">-</span>core</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>wget https<span class="sc">:</span><span class="er">//</span>download3.rstudio.org<span class="sc">/</span>ubuntu<span class="fl">-18.04</span><span class="sc">/</span>x86_64<span class="sc">/</span>shiny<span class="sc">-</span>server<span class="dv">-1</span>.<span class="dv">5</span>.<span class="fl">22.1017</span><span class="sc">-</span>amd64.deb</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>sudo gdebi shiny<span class="sc">-</span>server<span class="dv">-1</span>.<span class="dv">5</span>.<span class="fl">22.1017</span><span class="sc">-</span>amd64.deb</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="open-port-for-public-use" class="level3">
+<h3 class="anchored" data-anchor-id="open-port-for-public-use">Open PORT for public use</h3>
+<p>The SSH inbound security group for port 22 is available to log into the system, it should not be removed.</p>
+<p>Add an additional new security group to allow user access through the browser. Go to the instance, select Security tab, link at Security groups, edit inbound rules, add rule. Specification: custom TCP, Anywhere 0.0.0.0/0, port 3838.</p>
+<p>The test-page (index.html) should be up and running !</p>
+<p>To check it:<br>
+Copy the public IP (avoid https://) and add port number :3838<br>
+IPv4 Public IP:3838</p>
+<p>Note:<br>
+You may need to install the rmarkdown package in R as well (like shiny).</p>
+</section>
+<section id="upload-your-shiny-app" class="level3">
+<h3 class="anchored" data-anchor-id="upload-your-shiny-app">Upload your shiny app</h3>
+<p>The index.html and default shiny-app directory are generated at /srv/shiny-server/<br>
+Go to that directory and have a look at its contents.</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>cd <span class="sc">/</span>srv<span class="sc">/</span>shiny<span class="sc">-</span>server<span class="sc">/</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>ls <span class="sc">-</span>l</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Put the app in the directory /srv/shiny-server/ directly, or put a link there to another directory.</p>
+<p>To get the app in the appropriate directory:</p>
+<p>Either, upload the apps to the server, from github, gitlab, … using a clone.</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>sudo git clone <span class="st">&#39;https://.../MYAPP.git&#39;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Or, use WinSCP to transfer files to the server.<br>
+Use the same public IP, on port 22, and authenticate with the same private key, as ubuntu.</p>
+</section>
+<section id="directory-structure" class="level3">
+<h3 class="anchored" data-anchor-id="directory-structure">Directory structure</h3>
+<p>At the root the index.html is read, which by default makes use of the sample-apps. Alternatively, overwrite the index.html with proper links to folder uploaded/cloned that contain the actual apps.</p>
+<p>Probably permission need to be redefined to execute.</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>sudo chmod <span class="dv">777</span> <span class="sc">/</span>srv<span class="sc">/</span>shiny<span class="sc">-</span>server<span class="sc">/</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>It is good to check if everything is running:</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>sudo systemctl <span class="sc">/</span>srv<span class="sc">/</span>shiny<span class="sc">-</span>server<span class="sc">/</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The shiny server is set up, for now using http, not https !!</p>
+</section>
+<section id="configuration" class="level3">
+<h3 class="anchored" data-anchor-id="configuration">Configuration</h3>
+<p>A configuration file is required to ensure running under shiny (not ubuntu),<br>
+with an appropriate port and linked to the server.</p>
+<p>The file is at /etc/shiny-server/shiny-server.conf</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>sudo nano <span class="sc">/</span>etc<span class="sc">/</span>shiny<span class="sc">-</span>server<span class="sc">/</span>shiny<span class="sc">-</span>server.conf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>To preserve the logs, add ‘preserve_logs true;’ on top.</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>preserve_logs true;</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>run_as shiny;</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>server {</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  listen <span class="dv">3838</span>;</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  location <span class="sc">/</span> {</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    site_dir <span class="sc">/</span>srv<span class="sc">/</span>shiny<span class="sc">-</span>server;</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    log_dir <span class="sc">/</span>var<span class="sc">/</span>log<span class="sc">/</span>shiny<span class="sc">-</span>server;</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    directory_index on;</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Activate any changes with a reload.</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>sudo systemctl reload shiny<span class="sc">-</span>server</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="app-deployment" class="level2">
+<h2 class="anchored" data-anchor-id="app-deployment">App deployment</h2>
+<p>The folder containing the app should be set to read/write/executable.<br>
+Maybe the index.html, if not appropriate, can be removed, as well as certain directories.</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>sudo chmod <span class="dv">7777</span> <span class="sc">/</span>srv<span class="sc">/</span>shiny<span class="sc">-</span>server<span class="sc">/</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>sudo rm <span class="sc">/</span>srv<span class="sc">/</span>shiny<span class="sc">-</span>server<span class="sc">/</span>index.html</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>sudo rm <span class="sc">-</span>rf <span class="sc">/</span>srv<span class="sc">/</span>shiny<span class="sc">-</span>server<span class="sc">/</span>sample<span class="sc">-</span>apps</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Upload the app (button) or deploy it from github or gitlab.</p>
+<!--
+My git is configured with user.name vub-square, and e-mail square@vub.be.
+The credential.helper is at C:/Program\ Files/Git/mingw64/bin/git-credential-manager.exe
+-->
+</section>
+<section id="optional" class="level2">
+<h2 class="anchored" data-anchor-id="optional">Optional</h2>
+<p>to be added in future</p>
+<p>A domain name can be bought, and with nginx linked to the shiny-server.</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>server {</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    listen <span class="dv">80</span>;</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    listen [<span class="sc">::</span>]<span class="sc">:</span><span class="dv">80</span>;</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    server_name MY<span class="sc">-</span>DOMAIN<span class="sc">-</span>NAME;</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    location <span class="sc">/</span> {</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>        proxy_pass http<span class="sc">:</span><span class="er">//</span>localhost<span class="sc">:</span><span class="dv">3838</span>;</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>        proxy_redirect http<span class="sc">:</span><span class="er">//</span>localhost<span class="sc">:</span><span class="dv">3838</span><span class="sc">/</span> <span class="er">$</span>scheme<span class="sc">:</span><span class="er">//$</span>host<span class="sc">/</span>;</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>        proxy_http_version <span class="fl">1.1</span>;</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>        proxy_set_header Upgrade <span class="sc">$</span>http_upgrade;</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>        proxy_set_header Connection <span class="sc">$</span>connection_upgrade;</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>        proxy_read_timeout <span class="dv">20</span>d;</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>        proxy_buffering off;</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>To turn the http into https:<br>
+https://certbot.eff.org/instructions?ws=nginx&amp;os=ubuntufocal</p>
 </section>
 
 </main>
